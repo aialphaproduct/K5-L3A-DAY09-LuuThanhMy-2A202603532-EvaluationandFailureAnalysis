@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 8 Demo — LogiX-VN</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --panel-2: #f1f3f6;
+    --border: #e3e6eb;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --accent: #2f6fed;
+    --green: #1f9d55;
+    --red: #d64545;
+    --amber: #b97a12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 2px solid transparent;
+  }
+  nav button.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+  main { padding: 24px 28px 60px; max-width: 1100px; margin: 0 auto; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 15px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag.resolved { background: rgba(53,193,120,.15); color: var(--green); }
+  .tag.denied { background: rgba(224,168,66,.15); color: var(--amber); }
+  .tag.needs_info, .tag.escalated { background: rgba(79,140,255,.15); color: var(--accent); }
+  .tag.failed { background: rgba(239,90,90,.15); color: var(--red); }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .bar-label { width: 110px; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 10px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 6px; }
+  .bar-val { width: 50px; text-align: right; font-size: 12px; color: var(--muted); }
+  form.run-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  select, input {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    min-width: 160px;
+  }
+  button.run-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.run-btn:disabled { opacity: .5; cursor: default; }
+  .ticket-preview {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .info-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .info-box b { font-weight: 600; }
+  .shape-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .shape-card {
+    padding: 12px 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .shape-card .name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .shape-card .desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .kv:last-child { border-bottom: none; }
+  .kv span:first-child { color: var(--muted); }
+  pre.trace {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 12px;
+    max-height: 320px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+  .loading { color: var(--muted); font-size: 13px; }
+  .error-box { background: rgba(239,90,90,.1); border: 1px solid var(--red); color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>LogiX-VN — Lab 8 Demo</h1>
+    <p>From Workflows to Agents · workflow, single, orchestrator, swarm</p>
+  </div>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="dashboard">Dashboard benchmark</button>
+  <button class="tab-btn" data-tab="demo">Chạy thử claim</button>
+</nav>
+
+<main>
+
+  <section id="dashboard" class="tab active">
+    <div class="card">
+      <h2>So sánh 4 shape</h2>
+      <div id="bench-table"><div class="loading">Đang tải reports/benchmark.json...</div></div>
+    </div>
+    <div class="card">
+      <h2>Pass rate</h2>
+      <div id="bench-bars"></div>
+    </div>
+  </section>
+
+  <section id="demo" class="tab">
+    <div class="card">
+      <h2>4 shape là gì</h2>
+      <div class="shape-grid" id="shape-info-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Chạy một claim thật qua shape bất kỳ</h2>
+      <form class="run-form" id="run-form">
+        <div class="field">
+          <label for="claim-select">Claim</label>
+          <select id="claim-select"></select>
+        </div>
+        <div class="field">
+          <label for="shape-select">Shape</label>
+          <select id="shape-select"></select>
+        </div>
+        <div class="field">
+          <label for="seed-input">Seed</label>
+          <input id="seed-input" type="number" value="11" />
+        </div>
+        <button class="run-btn" id="run-btn" type="submit">Chạy</button>
+      </form>
+      <div class="info-box" id="claim-info"></div>
+      <div class="info-box" id="shape-info"></div>
+      <div id="run-error"></div>
+    </div>
+
+    <div class="card" id="result-card" style="display:none">
+      <h2>Kết quả (RunResult)</h2>
+      <div class="result-grid" id="result-grid"></div>
+    </div>
+
+    <div class="card" id="trace-card" style="display:none">
+      <h2>Trace</h2>
+      <pre class="trace" id="trace-view"></pre>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const tabs = document.querySelectorAll(".tab-btn");
+tabs.forEach(btn => {
+  btn.addEventListener("click", () => {
+    tabs.forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+async function loadBenchmark() {
+  const el = document.getElementById("bench-table");
+  const barsEl = document.getElementById("bench-bars");
+  try {
+    const res = await fetch("/api/benchmark");
+    if (!res.ok) {
+      const err = await res.json();
+      el.innerHTML = `<div class="error-box">${err.error}</div>`;
+      return;
+    }
+    const data = await res.json();
+    const bySh = data.by_shape || {};
+    const list = Object.entries(bySh).map(([shape, v]) => ({ shape, ...v }));
+
+    let html = "<table><thead><tr><th>Shape</th><th>Pass</th><th>Pass^5</th><th>Variance</th><th>Cost/success</th><th>Steps</th></tr></thead><tbody>";
+    let barsHtml = "";
+    for (const r of list) {
+      const pass = fmtNum(r.pass_rate);
+      const pass5 = fmtNum(r.pass_5);
+      const variance = fmtNum(r.seed_variance, 6);
+      const cost = fmtNum(r.cost_per_success_vnd, 2);
+      const steps = fmtNum(r.mean_steps, 2);
+      html += `<tr><td>${r.shape}</td><td>${pass}</td><td>${pass5}</td><td>${variance}</td><td>${cost}</td><td>${steps}</td></tr>`;
+      const pct = Math.round((r.pass_rate ?? 0) * 100);
+      barsHtml += `<div class="bar-row"><div class="bar-label">${r.shape}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-val">${pct}%</div></div>`;
+    }
+    html += "</tbody></table>";
+    el.innerHTML = html;
+    barsEl.innerHTML = barsHtml;
+  } catch (e) {
+    el.innerHTML = `<div class="error-box">Không tải được benchmark: ${e}</div>`;
+  }
+}
+
+function fmtNum(v, digits = 3) {
+  if (v === undefined || v === null) return "—";
+  return Number(v).toFixed(digits);
+}
+
+const SHAPE_INFO = {
+  workflow: {
+    title: "A · Workflow",
+    desc: "Các bước Python cố định, viết sẵn trình tự. Không có bước nào do model tự quyết. Rẻ và ổn định nhất vì không có gì để dao động."
+  },
+  single: {
+    title: "B · Single agent (ReAct)",
+    desc: "Một agent chạy vòng lặp ReAct tối đa 8 bước, chỉ được chọn tool đọc dữ liệu. Code vẫn là nơi tính tiền và ghi refund, model chỉ quyết bước tiếp theo."
+  },
+  orchestrator: {
+    title: "C · Orchestrator",
+    desc: "Tách orchestrator (ra quyết định, ghi refund) và investigator (chỉ đọc). Hai bên trao đổi qua handoff — gói dữ liệu đã lọc theo allowlist, không mang nguyên context gốc."
+  },
+  swarm: {
+    title: "D · Swarm",
+    desc: "Nhiều agent ngang hàng trao đổi với nhau (có sẵn trong bài, dùng để đối chứng). Linh hoạt nhất nhưng tốn chi phí và dao động giữa các seed cao nhất."
+  }
+};
+
+function renderShapeGrid() {
+  const grid = document.getElementById("shape-info-grid");
+  grid.innerHTML = Object.entries(SHAPE_INFO).map(([key, v]) => `
+    <div class="shape-card">
+      <div class="name">${v.title}</div>
+      <div class="desc">${v.desc}</div>
+    </div>
+  `).join("");
+}
+
+async function loadClaimsAndShapes() {
+  const [claimsRes, shapesRes] = await Promise.all([
+    fetch("/api/claims"), fetch("/api/shapes")
+  ]);
+  const claims = await claimsRes.json();
+  const shapes = await shapesRes.json();
+
+  const claimSelect = document.getElementById("claim-select");
+  claimSelect.innerHTML = claims.map(c => `<option value="${c.claim_id}">${c.claim_id} (${c.matrix_id || ""}) — kỳ vọng: ${c.expected_status}</option>`).join("");
+
+  const shapeSelect = document.getElementById("shape-select");
+  shapeSelect.innerHTML = shapes.map(s => `<option value="${s}">${s}</option>`).join("");
+
+  window.__claims = {};
+  claims.forEach(c => window.__claims[c.claim_id] = c);
+  renderShapeGrid();
+  updateClaimInfo();
+  updateShapeInfo();
+  claimSelect.addEventListener("change", updateClaimInfo);
+  shapeSelect.addEventListener("change", updateShapeInfo);
+}
+
+function updateClaimInfo() {
+  const id = document.getElementById("claim-select").value;
+  const c = window.__claims[id];
+  document.getElementById("claim-info").innerHTML = c
+    ? `<b>${c.claim_id}</b> (${c.matrix_id || "—"}) · kỳ vọng <b>${c.expected_status}</b><br/>Ticket khách hàng: "${c.ticket}"`
+    : "";
+}
+
+function updateShapeInfo() {
+  const key = document.getElementById("shape-select").value;
+  const info = SHAPE_INFO[key];
+  document.getElementById("shape-info").innerHTML = info
+    ? `<b>${info.title}</b><br/>${info.desc}`
+    : "";
+}
+
+document.getElementById("run-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const claim_id = document.getElementById("claim-select").value;
+  const shape = document.getElementById("shape-select").value;
+  const seed = parseInt(document.getElementById("seed-input").value || "11", 10);
+  const btn = document.getElementById("run-btn");
+  const errEl = document.getElementById("run-error");
+  errEl.innerHTML = "";
+  btn.disabled = true;
+  btn.textContent = "Đang chạy...";
+  document.getElementById("result-card").style.display = "none";
+  document.getElementById("trace-card").style.display = "none";
+
+  try {
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ claim_id, shape, seed })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.innerHTML = `<div class="error-box">${data.error}</div>`;
+      return;
+    }
+    renderResult(data);
+  } catch (err) {
+    errEl.innerHTML = `<div class="error-box">Lỗi: ${err}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Chạy";
+  }
+});
+
+function renderResult(data) {
+  const r = data.result;
+  const grid = document.getElementById("result-grid");
+  grid.innerHTML = `
+    <div>
+      <div class="kv"><span>status</span><span class="tag ${r.status}">${r.status}</span></div>
+      <div class="kv"><span>shape</span><span>${r.shape}</span></div>
+      <div class="kv"><span>run_id</span><span>${r.run_id}</span></div>
+      <div class="kv"><span>proposal_amount</span><span>${r.proposal_amount.toLocaleString()} đ</span></div>
+      <div class="kv"><span>committed_audit_count</span><span>${r.committed_audit_count}</span></div>
+      <div class="kv"><span>error_reason</span><span>${r.error_reason ?? "—"}</span></div>
+    </div>
+    <div>
+      <div class="kv"><span>model_calls</span><span>${r.model_calls}</span></div>
+      <div class="kv"><span>tool_calls</span><span>${r.tool_calls}</span></div>
+      <div class="kv"><span>input_tokens</span><span>${r.input_tokens}</span></div>
+      <div class="kv"><span>output_tokens</span><span>${r.output_tokens}</span></div>
+      <div class="kv"><span>cost_estimate</span><span>${r.cost_estimate}</span></div>
+      <div class="kv"><span>refund_effects</span><span>${JSON.stringify(r.refund_effects)}</span></div>
+    </div>
+  `;
+  document.getElementById("result-card").style.display = "block";
+
+  if (data.trace) {
+    document.getElementById("trace-view").textContent = JSON.stringify(data.trace, null, 2);
+    document.getElementById("trace-card").style.display = "block";
+  }
+}
+
+loadBenchmark();
+loadClaimsAndShapes();
+</script>
+
+</body>
+</html>
