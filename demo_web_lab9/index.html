@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 9 Demo — LogiX-VN Eval &amp; Failure Analysis</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --border:#e3e5ea; --text:#1f2430; --muted:#6b7280;
+    --accent:#5b5bf0; --accent-weak:#eceaff;
+    --good:#1f9254; --good-bg:#e6f6ec; --bad:#c0362c; --bad-bg:#fdeceb;
+    --warn:#b4790a; --warn-bg:#fdf3dc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--border)}
+  header h1{font-size:15px;margin:0;font-weight:600}
+  header .sub{font-size:12px;color:var(--muted)}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tab{padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);user-select:none}
+  .tab.active{background:var(--accent-weak);color:var(--accent);font-weight:600}
+  .layout{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 49px)}
+  .sidebar{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:10px}
+  .sidebar h2{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:10px 8px 6px}
+  .fm-node{margin-bottom:2px}
+  .fm-head{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px}
+  .fm-head:hover{background:var(--bg)}
+  .fm-head .chev{transition:transform .15s;color:var(--muted);font-size:10px;width:10px}
+  .fm-node.open .chev{transform:rotate(90deg)}
+  .fm-code{font-weight:600;color:var(--accent)}
+  .fm-children{display:none;padding-left:22px}
+  .fm-node.open .fm-children{display:block}
+  .claim-row{padding:6px 8px;border-radius:7px;font-size:12.5px;cursor:pointer;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+  .claim-row:hover{background:var(--bg);color:var(--text)}
+  .claim-row.selected{background:var(--accent-weak);color:var(--accent);font-weight:600}
+  .claim-row .ticket{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  main{overflow-y:auto;padding:18px 22px}
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  select,button{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--text)}
+  button{cursor:pointer;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  button:disabled{opacity:.5;cursor:default}
+  button.secondary{background:#fff;color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+  .empty{color:var(--muted);font-size:13px;padding:30px;text-align:center}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .chip.good{background:var(--good-bg);color:var(--good)}
+  .chip.bad{background:var(--bad-bg);color:var(--bad)}
+  .chip.warn{background:var(--warn-bg);color:var(--warn)}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+  .bubble-wrap{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .bubble{max-width:72%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.5}
+  .bubble.ticket{align-self:flex-start;background:#eef0f4;border-top-left-radius:3px}
+  .bubble.event{align-self:flex-end;background:var(--accent);color:#fff;border-top-right-radius:3px}
+  .bubble.event.flag{background:var(--bad)}
+  .bubble.final{align-self:center;max-width:90%;border:1px dashed var(--border);background:#fafafa}
+  .bubble .kind{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;opacity:.8;margin-bottom:3px;display:block}
+  .bubble pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  .gate-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .loading{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lab 9 · LogiX-VN Eval &amp; Failure Analysis</h1>
+  <span class="sub">taxonomy → trace → gate, chạy trực tiếp trên code thật</span>
+  <div class="tabs">
+    <div class="tab active" data-tab="trace">Trace case</div>
+    <div class="tab" data-tab="gate">Gate (M4)</div>
+    <div class="tab" data-tab="mutation">Mutation (M5-M7)</div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <h2>Failure taxonomy</h2>
+    <div id="fm-tree"></div>
+  </div>
+
+  <main>
+    <section id="view-trace">
+      <div class="toolbar">
+        <select id="shape-select"></select>
+        <select id="seed-select">
+          <option>11</option><option>22</option><option>33</option><option>44</option><option>55</option>
+        </select>
+        <button id="run-trace" disabled>Chạy trial</button>
+        <span class="loading" id="trace-loading"></span>
+      </div>
+      <div class="panel" id="trace-panel">
+        <div class="empty">Chọn một claim ở cây bên trái để xem trace.</div>
+      </div>
+    </section>
+
+    <section id="view-gate" style="display:none">
+      <div class="toolbar">
+        <select id="gate-shape-select">
+          <option value="fixed">fixed (kỳ vọng exit 0)</option>
+          <option value="seeded_regression">seeded_regression (kỳ vọng exit 1)</option>
+        </select>
+        <button id="run-gate">Chạy gate</button>
+        <span class="loading" id="gate-loading"></span>
+      </div>
+      <div class="panel" id="gate-panel">
+        <div class="empty">Bấm "Chạy gate" để so PR với baseline_v1.json.</div>
+      </div>
+    </section>
+
+    <section id="view-mutation" style="display:none">
+      <div class="toolbar">
+        <button id="run-mutation">Xem mutation scorecard (kết quả đã cache, hiện ngay)</button>
+        <button class="secondary" id="run-mutation-live">Chạy lại trực tiếp (~1-2 phút, 700 trial)</button>
+        <span class="loading" id="mutation-loading"></span>
+      </div>
+      <div class="panel" id="mutation-panel">
+        <div class="empty">Bấm để xem kết quả 5 variant công khai chạy qua gate thật.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+let selectedClaim = null;
+
+// ---- tabs ----
+$$('.tab').forEach(t => t.onclick = () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  ['trace','gate','mutation'].forEach(name => {
+    $('#view-' + name).style.display = (name === t.dataset.tab) ? 'block' : 'none';
+  });
+});
+
+// ---- sidebar: failure taxonomy tree ----
+async function loadTaxonomy() {
+  const fms = await fetch('/api/taxonomy').then(r => r.json());
+  const tree = $('#fm-tree');
+  tree.innerHTML = '';
+  for (const fm of fms) {
+    const node = document.createElement('div');
+    node.className = 'fm-node';
+    const head = document.createElement('div');
+    head.className = 'fm-head';
+    head.innerHTML = `<span class="chev">▶</span><span class="fm-code">${fm.id}</span> ${fm.name} <span style="color:var(--muted);margin-left:auto;font-size:11px">${fm.claims.length}</span>`;
+    head.onclick = () => node.classList.toggle('open');
+    const children = document.createElement('div');
+    children.className = 'fm-children';
+    for (const c of fm.claims) {
+      const row = document.createElement('div');
+      row.className = 'claim-row';
+      row.dataset.claim = c.claim_id;
+      row.innerHTML = `<span>${c.claim_id}</span><span class="ticket" title="${c.ticket || ''}">${c.ticket || ''}</span>`;
+      row.onclick = () => selectClaim(c.claim_id, row);
+      children.appendChild(row);
+    }
+    node.appendChild(head);
+    node.appendChild(children);
+    tree.appendChild(node);
+  }
+}
+
+function selectClaim(claimId, rowEl) {
+  $$('.claim-row').forEach(r => r.classList.remove('selected'));
+  rowEl.classList.add('selected');
+  selectedClaim = claimId;
+  $('#run-trace').disabled = false;
+  runTrace();
+}
+
+async function loadShapes() {
+  const shapes = await fetch('/api/shapes').then(r => r.json());
+  const sel = $('#shape-select');
+  sel.innerHTML = shapes.map(s => `<option value="${s}">${s}</option>`).join('');
+  if (shapes.includes('swarm')) sel.value = 'swarm';
+}
+
+function chip(ok, labelOk, labelBad) {
+  if (ok === null || ok === undefined) return `<span class="chip warn">?</span>`;
+  return ok ? `<span class="chip good">✓ ${labelOk}</span>` : `<span class="chip bad">✗ ${labelBad}</span>`;
+}
+
+async function runTrace() {
+  if (!selectedClaim) return;
+  const shape = $('#shape-select').value;
+  const seed = $('#seed-select').value;
+  $('#trace-loading').textContent = 'đang chạy trial...';
+  const res = await fetch(`/api/trace?claim_id=${selectedClaim}&shape=${shape}&seed=${seed}`).then(r => r.json());
+  $('#trace-loading').textContent = '';
+  const panel = $('#trace-panel');
+  if (res.error) { panel.innerHTML = `<div class="empty">${res.error}</div>`; return; }
+
+  const badges = res.graders.map(g => chip(g.ok, g.id, g.id + (g.detail ? ': ' + g.detail : ''))).join(' ');
+  const overall = chip(res.lab8_pass, 'pass_rate PASS', 'pass_rate FAIL — ' + (res.lab8_reason || ''));
+
+  let bubbles = `<div class="bubble ticket"><span class="kind">ticket · ${selectedClaim}</span>${res.ticket || '(không có ticket text)'}</div>`;
+  for (const ev of res.events) {
+    const flag = ev.kind === 'model_override';
+    bubbles += `<div class="bubble event ${flag ? 'flag' : ''}"><span class="kind">${ev.kind}${flag ? ' ⚠ override' : ''}</span><pre>${JSON.stringify(ev.payload, null, 1)}</pre></div>`;
+  }
+  bubbles += `<div class="bubble final">
+    <span class="kind">kết quả cuối (shape=${shape}, seed=${seed})</span>
+    <table style="margin-top:6px">
+      <tr><th></th><th>thực tế</th><th>nhãn kỳ vọng</th></tr>
+      <tr><td>status</td><td class="mono">${res.result.status}</td><td class="mono">${res.label.status}</td></tr>
+      <tr><td>proposal_amount</td><td class="mono">${res.result.proposal_amount}</td><td class="mono">${res.label.proposal_amount}</td></tr>
+      <tr><td>refund_vnd (ledger)</td><td class="mono">${res.snapshot.refund_vnd}</td><td class="mono">${res.label.refund_vnd}</td></tr>
+    </table>
+  </div>`;
+
+  panel.innerHTML = `
+    <div class="gate-head"><strong>${selectedClaim} @ seed ${seed} — shape ${shape}</strong> ${overall}</div>
+    <div class="badges">${badges}</div>
+    <div class="bubble-wrap">${bubbles}</div>
+  `;
+}
+$('#run-trace').onclick = runTrace;
+$('#shape-select').onchange = runTrace;
+$('#seed-select').onchange = runTrace;
+
+// ---- gate tab ----
+async function runGate() {
+  const shape = $('#gate-shape-select').value;
+  $('#gate-loading').textContent = 'đang chấm...';
+  const res = await fetch(`/api/gate?shape=${shape}`).then(r => r.json());
+  $('#gate-loading').textContent = '';
+  const panel = $('#gate-panel');
+  if (res.error) { panel.innerHTML = `<div class="empty">${res.error}</div>`; return; }
+  const verdict = res.exit_code === 0
+    ? `<span class="chip good">exit 0 — merge</span>`
+    : `<span class="chip bad">exit 1 — blocked: ${res.blocked.join(', ')}</span>`;
+  panel.innerHTML = `
+    <div class="gate-head"><strong>${res.pr_run_id}</strong> vs <strong>${res.base_run_id}</strong> ${verdict}</div>
+    <pre class="mono" style="white-space:pre-wrap;font-size:12px;background:#fafafa;border:1px solid var(--border);border-radius:8px;padding:10px">${res.lines.join('\n')}</pre>
+  `;
+}
+$('#run-gate').onclick = runGate;
+
+// ---- mutation tab ----
+async function runMutation(live) {
+  const btn1 = $('#run-mutation'), btn2 = $('#run-mutation-live');
+  $('#mutation-loading').textContent = live ? 'đang chạy 5 variant x 28 item x 5 seed, chờ ~1-2 phút...' : 'đang tải...';
+  btn1.disabled = true; btn2.disabled = true;
+  const res = await fetch('/api/mutation' + (live ? '?live=1' : '')).then(r => r.json());
+  $('#mutation-loading').textContent = '';
+  btn1.disabled = false; btn2.disabled = false;
+  const panel = $('#mutation-panel');
+  if (res.error) { panel.innerHTML = `<div class="empty">${res.error}</div>`; return; }
+  const rows = res.rows.map(r => {
+    const ok = r.expect === r.got;
+    const tag = ok ? `<span class="chip good">ok</span>` : (r.expect === 'block' ? `<span class="chip bad">SURVIVED</span>` : `<span class="chip bad">FALSE ALARM</span>`);
+    return `<tr><td class="mono">${r.variant}</td><td>${r.expect}</td><td>${r.got}</td><td>${tag}</td><td style="font-size:11px;color:var(--muted)">${r.why.join(', ')}</td></tr>`;
+  }).join('');
+  const src = res.cached ? `<span class="chip warn">kết quả cache</span>` : `<span class="chip good">vừa chạy trực tiếp</span>`;
+  panel.innerHTML = `
+    <div class="gate-head"><strong>mutation score ${res.killed}/${res.regressions}</strong> · false alarms ${res.false_alarms} ${src}</div>
+    <table>
+      <tr><th>variant</th><th>expect</th><th>got</th><th></th><th>metric/slice chặn</th></tr>
+      ${rows}
+    </table>
+  `;
+}
+$('#run-mutation').onclick = () => runMutation(false);
+$('#run-mutation-live').onclick = () => runMutation(true);
+
+loadTaxonomy();
+loadShapes();
+</script>
+</body>
+</html>

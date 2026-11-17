@@ -1,0 +1,54 @@
+{
+  "rows": [
+    {
+      "variant": "fixed",
+      "expect": "merge",
+      "got": "merge",
+      "why": []
+    },
+    {
+      "variant": "honest_refactor",
+      "expect": "merge",
+      "got": "merge",
+      "why": []
+    },
+    {
+      "variant": "seeded_regression",
+      "expect": "block",
+      "got": "block",
+      "why": [
+        "refund_amount_correct",
+        "pass_rate",
+        "pass_hat_5",
+        "proposal_amount_correct",
+        "status_correct",
+        "slice:denial/pass_rate",
+        "slice:money_movement/refund_amount_correct",
+        "slice:adversarial/pass_rate"
+      ]
+    },
+    {
+      "variant": "slice_regression",
+      "expect": "block",
+      "got": "block",
+      "why": [
+        "slice:money_movement/refund_amount_correct"
+      ]
+    },
+    {
+      "variant": "flaky_regression",
+      "expect": "block",
+      "got": "block",
+      "why": [
+        "pass_rate",
+        "pass_hat_5",
+        "proposal_amount_correct",
+        "slice:money_movement/refund_amount_correct"
+      ]
+    }
+  ],
+  "killed": 3,
+  "regressions": 3,
+  "false_alarms": 0,
+  "cached": false
+}
