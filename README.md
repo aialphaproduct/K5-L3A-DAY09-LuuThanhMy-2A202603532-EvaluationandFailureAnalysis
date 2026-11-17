@@ -1,5 +1,10 @@
 # K5 · Day 9 · Lab — Evaluation & Failure Analysis (LogiX-VN)
 
+> **Bài làm thật ở đây:** repo này chỉ là starter gốc (thiếu `src/lab8/`, không tự chạy được).
+> Theo đúng hướng dẫn ở mục "Cài đặt (M0)" dưới đây, bài làm M0–M7 + bonus đã được overlay vào
+> repo Lab 8 của nhóm và nộp bằng Pull Request:
+> **https://github.com/vuThai05/K5-L3A-DAY08-4H45-FromWorkflowsToAgents/pull/19**
+
 > Nối tiếp Lab 8. Lab 8 trả lời "agent có chạy không"; Lab 9 trả lời **"làm sao biết bản mới tốt hơn — và chặn được bản tệ trước khi merge"**.
 > Không cần API key: MockLLM + judge replay. **Không Langfuse / OTel** (observability học ở Day 14).
 
